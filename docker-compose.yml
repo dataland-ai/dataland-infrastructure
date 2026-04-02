@@ -28,6 +28,12 @@ services:
       - "4147:6334"
     volumes:
       - qdrant-data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:6333/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - dataland-network
     restart: unless-stopped
@@ -49,12 +55,37 @@ services:
       - dataland-network
     restart: unless-stopped
 
+  auth:
+    build:
+      context: ../dataland-agent
+      dockerfile: Dockerfile
+    image: dataland/auth-server:latest
+    container_name: dataland-auth
+    command: ["uv", "run", "python", "auth_server.py"]
+    ports:
+      - "9000:9000"
+    environment:
+      - AGENT_URL=${AGENT_URL:-http://localhost:4141}
+    volumes:
+      - auth-data:/app/data
+    networks:
+      - dataland-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9000/.well-known/jwks.json')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
 volumes:
   postgres-data:
     driver: local
   qdrant-data:
     driver: local
   redis-data:
+    driver: local
+  auth-data:
     driver: local
 
 networks:
