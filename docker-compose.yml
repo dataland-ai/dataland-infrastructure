@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dataland-postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-dataland}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-dataland}
+      - POSTGRES_DB=${POSTGRES_DB:-dataland}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dataland} -d ${POSTGRES_DB:-dataland}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - dataland-network
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: dataland-qdrant
+    ports:
+      - "4146:6333"
+      - "4147:6334"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    networks:
+      - dataland-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: dataland-redis
+    ports:
+      - "4145:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - dataland-network
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+    driver: local
+  qdrant-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  dataland-network:
+    external: true
