@@ -59,7 +59,7 @@ services:
     ports:
       - "9000:9000"
     environment:
-      - AGENT_URL=${AGENT_URL:-http://localhost:4141}
+      - AGENT_URL=${AGENT_URL:-https://chat.cbnv.cloud}
     volumes:
       - auth-data:/app/data
     networks:
